@@ -16,21 +16,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      # Ensures cmdline-tools + accepted licenses; AGP auto-installs platform 35 / build-tools.
-       - name: Set up Android SDK
-         uses: android-actions/setup-android@v3
-        with:
-          api-level: 35
-          ndk-version: '27.2.12479018'
-
+      # NOTE: no android-actions/setup-android here — that action is broken on current runner
+      # images (it calls `sdkmanager tools`, a package that no longer exists). The ubuntu-latest
+      # runner ships the Android SDK with licenses accepted, and AGP auto-installs any missing
+      # platform/build-tools, so this step is unnecessary.
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
