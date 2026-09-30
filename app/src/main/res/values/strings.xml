@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Screen Translator</string>
+    <string name="service_label">Screen Translator</string>
+    <string name="service_description">Reads the text of the app in the foreground and shows translations in an overlay. Only visible text is translated, and it updates as you scroll. Toggle with the floating bubble.</string>
+</resources>
