@@ -2,18 +2,18 @@ name: Android CI
 
 on:
   push:
-    branches: ["**"]
+    branches: [ "**" ]
   pull_request:
   workflow_dispatch:
 
-permissions:
-  contents: write
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     name: Build debug APK
     runs-on: ubuntu-latest
-
     steps:
       - name: Check out code
         uses: actions/checkout@v5
@@ -22,8 +22,12 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17'
 
+      # NOTE: no android-actions/setup-android here — that action is broken on current runner
+      # images (it calls `sdkmanager tools`, a package that no longer exists). The ubuntu-latest
+      # runner ships the Android SDK with licenses accepted, and AGP auto-installs any missing
+      # platform/build-tools, so this step is unnecessary.
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
@@ -33,20 +37,9 @@ jobs:
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug --stacktrace
 
-      - name: Upload APK
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: screen-translator-debug-apk
-          path: android-app/app/build/outputs/apk/debug/app-debug.apk
-
-      - name: Publish APK to release
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          APK_PATH: android-app/app/build/outputs/apk/debug/app-debug.apk
-        run: |
-          gh release delete latest --cleanup-tag --yes || true
-          gh release create latest "$APK_PATH" \
-            --target "${{ github.sha }}" \
-            --title "Latest debug build" \
-            --notes "Built from commit ${{ github.sha }}"
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
