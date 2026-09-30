@@ -1,0 +1,55 @@
+name: Release APK
+
+# Publishes the built APK as a GitHub Release asset whenever a tag like v0.1.1 is pushed.
+# Permanent download link afterwards:
+#   https://github.com/<owner>/<repo>/releases/latest/download/screen-translator.apk
+on:
+  push:
+    tags: [ "v*" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # required to create releases / upload assets
+
+jobs:
+  release:
+    name: Build + publish release APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Build debug APK
+        run: ./gradlew :app:assembleDebug
+
+      # Fail loudly and early if the APK isn't where we expect (correct path = app/, NOT android-app/).
+      - name: Verify APK exists
+        run: ls -l app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Publish GitHub Release with the APK
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          REPO="${{ github.repository }}"
+          # If a release for this tag already exists (e.g. retrying a failed run), replace it.
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release delete "$TAG" --yes --repo "$REPO" || true
+          fi
+          gh release create "$TAG" \
+            "app/build/outputs/apk/debug/app-debug.apk#screen-translator.apk" \
+            --title "Screen Translator $TAG" \
+            --notes "On-device screen translator (Accessibility + ML Kit). Debug APK, installable." \
+            --repo "$REPO"
