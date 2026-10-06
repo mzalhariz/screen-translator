@@ -1,0 +1,9 @@
+# Keep the Gradle wrapper intact and line-endings correct across platforms.
+*.jar binary
+gradlew text eol=lf
+gradlew.bat text eol=crlf
+*.sh text eol=lf
+*.kts text eol=lf
+*.kt text eol=lf
+*.yml text eol=lf
+*.xml text eol=lf
